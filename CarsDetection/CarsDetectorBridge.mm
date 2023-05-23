@@ -19,8 +19,7 @@
  
  */
     
-- (NSDictionary *) detectCarsIn: (UIImage *) image {
-    
+- (NSDictionary *) detectCarsIn: (UIImage *) image{
     // convert uiimage to mat
     cv::Mat opencvImage;
     UIImageToMat(image, opencvImage, true);
@@ -36,6 +35,7 @@
     // convert mat to uiimage
     UIImage *maskedImage = MatToUIImage(imageWithLaneDetected.maskedImage);
     
+    /*
     NSMutableArray *yellowDP = [[NSMutableArray alloc] init];
     for (cv::Point2f point : imageWithLaneDetected.yellowDP) {
         NSValue *value = [NSValue valueWithCGPoint:CGPointMake(point.x, point.y)];
@@ -48,17 +48,60 @@
         [greenDP addObject:value];
     }
     
-    NSMutableArray *redDP = [[NSMutableArray alloc] init];
-    for (cv::Point2f point : imageWithLaneDetected.redDP) {
+    NSMutableArray *blueDP = [[NSMutableArray alloc] init];
+    for (cv::Point2f point : imageWithLaneDetected.blueDP) {
         NSValue *value = [NSValue valueWithCGPoint:CGPointMake(point.x, point.y)];
-        [redDP addObject:value];
+        [blueDP addObject:value];
+    }
+     */
+    
+    NSMutableArray *yellowDP = [[NSMutableArray alloc] init];
+    NSMutableArray *yellowAngles = [[NSMutableArray alloc] init];
+    for (std::tuple<cv::Point, double> tuple : imageWithLaneDetected.yellowDP) {
+        cv::Point point = std::get<0>(tuple);
+        
+        NSValue *value = [NSValue valueWithCGPoint:CGPointMake(point.x, point.y)];
+        [yellowDP addObject:value];
+        
+        double angle = std::get<1>(tuple);
+        NSNumber *angleNumber = [NSNumber numberWithDouble:angle];
+        [yellowAngles addObject:angleNumber];
+    }
+    
+    NSMutableArray *greenDP = [[NSMutableArray alloc] init];
+    NSMutableArray *greenAngles = [[NSMutableArray alloc] init];
+    for (std::tuple<cv::Point, double> tuple : imageWithLaneDetected.greenDP) {
+        cv::Point point = std::get<0>(tuple);
+        
+        NSValue *value = [NSValue valueWithCGPoint:CGPointMake(point.x, point.y)];
+        [greenDP addObject:value];
+        
+        double angle = std::get<1>(tuple);
+        NSNumber *angleNumber = [NSNumber numberWithDouble:angle];
+        [greenAngles addObject:angleNumber];
+    }
+    
+    NSMutableArray *blueDP = [[NSMutableArray alloc] init];
+    NSMutableArray *blueAngles = [[NSMutableArray alloc] init];
+    for (std::tuple<cv::Point, double> tuple : imageWithLaneDetected.blueDP) {
+        cv::Point point = std::get<0>(tuple);
+        
+        NSValue *value = [NSValue valueWithCGPoint:CGPointMake(point.x, point.y)];
+        [blueDP addObject:value];
+        
+        double angle = std::get<1>(tuple);
+        NSNumber *angleNumber = [NSNumber numberWithDouble:angle];
+        [blueAngles addObject:angleNumber];
     }
     
     // return maskedImage and detectedPoints
     return @{@"maskedImage": maskedImage,
              @"yellowDP": yellowDP,
              @"greenDP": greenDP,
-             @"redDP": redDP,
+             @"blueDP": blueDP,
+             @"yellowAngles": yellowAngles,
+             @"greenAngles": greenAngles,
+             @"blueAngles": blueAngles,
              @"imageWidth": @(imageWithLaneDetected.imageWidth),
              @"imageHeight": @(imageWithLaneDetected.imageHeight)};
 }
@@ -82,7 +125,9 @@
     UIImage *maskedImage = MatToUIImage(imageWithLaneDetected.maskedImage);
     
     NSMutableArray *yellowDP = [[NSMutableArray alloc] init];
-    for (cv::Point2f point : imageWithLaneDetected.yellowDP) {
+    for (std::tuple<cv::Point, double> tuple : imageWithLaneDetected.yellowDP) {
+        cv::Point point = std::get<0>(tuple);
+        
         NSValue *value = [NSValue valueWithCGPoint:CGPointMake(point.x, point.y)];
         [yellowDP addObject:value];
     }

@@ -18,9 +18,12 @@ using namespace cv;
 using namespace std;
 
 struct DetectionResult {
-    std::vector<cv::Point> yellowDP;
-    std::vector<cv::Point> greenDP;
-    std::vector<cv::Point> redDP;
+    //std::vector<cv::Point> yellowDP;
+    //std::vector<cv::Point> greenDP;
+    //std::vector<cv::Point> blueDP;
+    std::vector<std::tuple<cv::Point, double>> yellowDP;
+    std::vector<std::tuple<cv::Point, double>> greenDP;
+    std::vector<std::tuple<cv::Point, double>> blueDP;
     Mat maskedImage;
     int imageWidth;
     int imageHeight;
@@ -30,6 +33,7 @@ struct dataPoint {
     cv::Point point;
     int width;
     int height;
+    double angle;
 };
 
 class CarsDetector {

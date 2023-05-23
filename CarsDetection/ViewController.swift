@@ -11,9 +11,19 @@ import AVFoundation
 import Network
 import MobileCoreServices
 import UserNotifications
+//import NetworkExtension
+//import SystemConfiguration.CaptiveNetwork
+
 
 class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate, UNUserNotificationCenterDelegate {
     
+        
+    //PROCESSUS TO SETUP
+    //CONNECT THE PHONE TO THE LOCAL NETWORK ON WHICH THE SERVER IS RUNNING
+    //FIND THE SERVER COMPUTER IP'S ADDR AND PORT AND HARCODE IT
+    //LAUNCH THE SERVER
+    //LAUNCH THE APP
+    //PLACE THE 4 YELLOW TRIANGLES TO CALIBRATE THE CIRCUIT
     
 
     @IBOutlet weak var imageView: UIImageView!
@@ -25,6 +35,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     private var calibrated = false;
     
     private var lastCalibrationPoints: [NSValue] = []
+    private var lastCalibrationTimestamp: TimeInterval = -1
     private var lastNotificationTimestamp: TimeInterval = -1
     
     var connection: NWConnection!
@@ -38,7 +49,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         self.addCameraInput()
         self.getFrames()
         self.captureSession.startRunning()
-        self.initTCPConnection()
+        self.initTCPConnection(needListener: true)
         
         UNUserNotificationCenter.current().delegate = self
         
@@ -48,8 +59,44 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                 print("Error requesting authorization: \(error.localizedDescription)")
             }
         }
+        
+        //print(getSSID());
+        //connectToWiFi(ssid: <#T##String#>, password: <#T##String#>)
 
     }
+    
+    /*
+    func connectToWiFi(ssid: String, password: String) {
+        let configuration = NEHotspotConfiguration(ssid: ssid, passphrase: password, isWEP: false)
+        configuration.joinOnce = false
+        
+        NEHotspotConfigurationManager.shared.apply(configuration) { (error) in
+            if let error = error {
+                print("Failed to connect to Wi-Fi: \(error.localizedDescription)")
+            } else {
+                print("Successfully connected to Wi-Fi")
+            }
+        }
+    }
+    
+    func getSSID() -> String? {
+        guard let interfaceNames = CNCopySupportedInterfaces() as? [String] else {
+            return nil
+        }
+        
+        for interfaceName in interfaceNames {
+            guard let info = CNCopyCurrentNetworkInfo(interfaceName as CFString) as? [String: Any] else {
+                continue
+            }
+            
+            if let ssid = info[kCNNetworkInfoKeySSID as String] as? String {
+                return ssid
+            }
+        }
+        
+        return nil
+    }
+     */
 
     
     // Handle foreground notifications and display them
@@ -79,6 +126,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         CVPixelBufferUnlockBaseAddress(imageBuffer, CVPixelBufferLockFlags.readOnly)
         let image = UIImage(cgImage: quartzImage)
             
+            
             if(self.calibrated){
                 if let imageWithLaneDetected = CarsDetectorBridge().detectCars(in: image) {
                     // safely unwrap the dictionary and access its values
@@ -90,21 +138,34 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                     let imageHeight = imageWithLaneDetected["imageHeight"] as! CGFloat
                     
                     //list of NSPoints
-                    let yellowCenterPoints = imageWithLaneDetected["yellowDP"] as! [NSValue]
-                    let greenCenterPoints = imageWithLaneDetected["greenDP"] as! [NSValue]
-                    let redCenterPoints = imageWithLaneDetected["redDP"] as! [NSValue]
+                    var yellowCenterPoints = imageWithLaneDetected["yellowDP"] as! [NSValue]
+                    var greenCenterPoints = imageWithLaneDetected["greenDP"] as! [NSValue]
+                    var blueCenterPoints = imageWithLaneDetected["blueDP"] as! [NSValue]
                     
-                    let sY = String(describing: yellowCenterPoints)
-                    let sG = String(describing: greenCenterPoints)
-                    let sR = String(describing: redCenterPoints)
-                    let dataString = "{yellow: " + sY + ", green: " + sG + ", red: " + sR + "}"
+                    var yellowCenterAngles = imageWithLaneDetected["yellowAngles"] as! [NSValue]
+                    var greenCenterAngles = imageWithLaneDetected["greenAngles"] as! [NSValue]
+                    var blueCenterAngles = imageWithLaneDetected["blueAngles"] as! [NSValue]
+                    
+                    //print(blueCenterAngles)
+                    
+                    //remove points that are outside the calibrated points.
+                    var (sY, aY) = filterPoints(points: yellowCenterPoints, angles: yellowCenterAngles);
+                    var (sG, aG) = filterPoints(points: greenCenterPoints, angles: greenCenterAngles);
+                    var (sB, aB) = filterPoints(points: blueCenterPoints, angles: blueCenterAngles);
+                    
+                    
+                    //CAL
+                    //{"yellow": "[NSPoint: {930, 1399}, NSPoint: {149, 1372}, NSPoint: {949, 541}, NSPoint: {156, 537}]", "green": "[]", "blue" : "[]"}
+                    
+                    let dataString = "{\"yellow\": \"" + sY + "\", \"green\":\"" + sG + "\", \"blue\" : \"" + sB + "\", \"yellowAngles\": \"" + aY + "\", \"greenAngles\": \"" + aG + "\", \"blueAngles\" : \"" + aB + "\"}\n"
+                    
                     let bodyString = "CAM\n" + dataString
                     
-                    print(bodyString)
+                    //print(bodyString)
                     sendMSG(messageData: bodyString)
                     
-                    print(imageWidth)
-                    print(imageHeight)
+                    //print(imageWidth)
+                    //print(imageHeight)
                     
                     /*
                      OpenCV uses a right-handed Cartesian coordinate system, where the positive x-axis points to the right, the positive y-axis points downwards, and the positive z-axis points out of the screen towards the viewer.
@@ -151,12 +212,17 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                     
                     //only in the case we have 4 yellow elements stable for the last 10 seconds
                     //we send the calibration data to the server
+                    //print(yellowCenterPoints)
+                    
+                    //{"yellow": "[NSPoint: {930, 1399}-angle, NSPoint: {149, 1372}, NSPoint: {949, 541}, NSPoint: {156, 537}]", "green": "[]", "blue" : "[]"}
                     if(isCalibrationPointsStable(yellowCenterPoints: yellowCenterPoints)){
-                        let dataString = "{yellow: " + sY + ", green: [], red: []]}"
+                        let dataString = "{\"yellow\": \"" + sY + "\", \"green\": \"[]\", \"blue\" : \"[]\", \"yellowAngles\": \"[]\", \"greenAngles\": \"[]\", \"blueAngles\" : \"[]\"}\n"
                         let bodyString = "CAL\n" + dataString
                         
+                        //print(bodyString)
+                        
                         print("Sending calibration data to server")
-                        sendNotification(message: "Sending calibration data to server.", needToBeSent: false)
+                        //sendNotification(message: "Sending calibration data to server.", needToBeSent: false)
                         
                         sendMSG(messageData: bodyString)
                     }
@@ -186,11 +252,37 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         videoDataOutput.videoSettings = [(kCVPixelBufferPixelFormatTypeKey as NSString) : NSNumber(value: kCVPixelFormatType_32BGRA)] as [String : Any]
         videoDataOutput.alwaysDiscardsLateVideoFrames = true
         videoDataOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "camera.frame.processing.queue"))
+        captureSession.sessionPreset = .high;
         self.captureSession.addOutput(videoDataOutput)
         guard let connection = self.videoDataOutput.connection(with: AVMediaType.video),
             connection.isVideoOrientationSupported else { return }
         connection.videoOrientation = .portrait
     }
+    
+    func filterPoints(points: [NSValue], angles: [NSValue]) -> (String, String) {
+        guard lastCalibrationPoints.count == 4 else {
+            // If the calibration points are not yet set, return the original list of points.
+            return (String(describing: points), String(describing: angles))
+        }
+        
+        let rect = CGRect(points: self.lastCalibrationPoints)
+        var filteredPoints = [NSValue]()
+        var filteredAngles = [NSNumber]()
+            
+        for (index, point) in points.enumerated() {
+            let cgPoint = point.cgPointValue
+            if rect.contains(cgPoint) {
+                if let angleValue = angles[index] as? NSNumber {
+                            filteredPoints.append(point)
+                            filteredAngles.append(angleValue)
+                }
+            }
+        }
+            
+        return (String(describing: filteredPoints), String(describing: filteredAngles))
+
+    }
+    
     
     //function to send a notification on the device
     private func sendNotification(message: String, needToBeSent: Bool) {
@@ -219,11 +311,11 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         }
     }
     
-    private func initTCPConnection() {
+    private func initTCPConnection(needListener: Bool) {
         //port on which the server is listening
-        let PORT: NWEndpoint.Port = 8888
+        let PORT: NWEndpoint.Port = 8899
         //address of the server on the local network
-        let ipAddress :NWEndpoint.Host = "172.20.10.19"
+        let ipAddress :NWEndpoint.Host = "172.20.10.6"
         
         let queue = DispatchQueue(label: "TCP Client Queue")
         let tcp = NWProtocolTCP.Options.init()
@@ -235,17 +327,22 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         connection.stateUpdateHandler = {(newState) in
             switch (newState) {
                 case .ready:
-                    print("We are connected to the Server.")
+                    print("Connected to the Server.")
                     self.readyToSend = true
                 
                 case .cancelled:
                     print("Connection was cancelled")
                     self.readyToSend = false
                    
-               case .failed(let error):
-                    print("Connection failure, error: \(error.localizedDescription)")
+                //case .failed(let error):
+                case .failed:
+                    //print("Connection failure, error: \(error.localizedDescription)")
+                    print("Server crashed. Reconnecting in 500 ms.")
                     self.readyToSend = false
-                    self.connection.start(queue: queue)
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self.initTCPConnection(needListener: false)
+                    }
                     
                 
                 default:
@@ -279,38 +376,41 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         print("Creating TCP Socket\nTrying to connect to the Server..")
         connection.start(queue: queue)
         
-        // create a listener object
-        let listener = try! NWListener(using: .udp, on: 12345)
-        self.listener = listener;
+        if(needListener){
+            // create a listener object
+            let listener = try! NWListener(using: .udp, on: 12345)
+            self.listener = listener;
 
-        // set up the listener's state update handler
-        self.listener.stateUpdateHandler = { newState in
-            switch newState {
-            case .ready:
-                print("Listener started")
-            case .failed(let error):
-                print("Listener failed with error: \(error)")
-            case .cancelled:
-                print("Listener cancelled")
-            default:
-                break
+            // set up the listener's state update handler
+            self.listener.stateUpdateHandler = { newState in
+                switch newState {
+                case .ready:
+                    print("Listener started")
+                case .failed(let error):
+                    print("Listener failed with error: \(error)")
+                case .cancelled:
+                    print("Listener cancelled")
+                default:
+                    break
+                }
             }
-        }
 
-        // set up the listener's new connection handler
-        self.listener.newConnectionHandler = { newConnection in
-            //the hacky way we found is to open a new connection from the server side on a special port to tell the
-            //application we are calibrated
-            print("Server is now calibrated.")
-            self.sendNotification(message: "Server is now calibrated.", needToBeSent: true)
-            self.calibrated = true
-            self.listener.cancel()
-        }
+            // set up the listener's new connection handler
+            self.listener.newConnectionHandler = { newConnection in
+                //the hacky way we found is to open a new connection from the server side on a special port to tell the
+                //application we are calibrated
+                print("Server is now calibrated.")
+                self.sendNotification(message: "Server is now calibrated.", needToBeSent: true)
+                self.calibrated = true
+                self.listener.cancel()
+            }
 
-        // start the listener
-        self.listener.start(queue: .global())
+            // start the listener
+            self.listener.start(queue: .global())
+            
+            self.sendNotification(message: "Please calibrate the circuit.", needToBeSent: true)
+        }
         
-        self.sendNotification(message: "Please calibrate the circuit.", needToBeSent: true)
     }
     
     //Function to send a message to the Server
@@ -322,6 +422,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             print("Can't send data, connection isn't set up!")
             return;
         }
+        
         
         let content: Data = messageData.data(using: .utf8)!
         connection.send(content: content, completion: NWConnection.SendCompletion.contentProcessed(({ (NWError) in
@@ -371,7 +472,6 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                 let currentTimeStamp = Date().timeIntervalSince1970
                 if currentTimeStamp - lastCalibrationTimestamp >= 10.0 {
                     // If the difference between the current timestamp and lastCalibrationTimestamp is greater than or equal to 10 seconds, we can start calibrating
-                    print("STABLE")
                     return true
                 } else {
                     return false
@@ -379,5 +479,16 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             }
         }
     }
-     
+    
+}
+
+extension CGRect {
+    init(points: [NSValue]) {
+        let pointValues = points.map { $0.cgPointValue }
+        let minX = pointValues.min(by: { $0.x < $1.x })!.x  + 10
+        let minY = pointValues.min(by: { $0.y < $1.y })!.y  + 10
+        let maxX = pointValues.max(by: { $0.x < $1.x })!.x  - 10
+        let maxY = pointValues.max(by: { $0.y < $1.y })!.y  - 10
+        self.init(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
 }
