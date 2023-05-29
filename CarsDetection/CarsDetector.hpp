@@ -1,10 +1,6 @@
 //
 //  CarsDetector.hpp
 //  CarsDetection
-//
-//  Created by Anurag Ajwani on 28/04/2019.
-//  Copyright © 2019 Anurag Ajwani. All rights reserved.
-//  Modified by Arthur Bigot
 
 
 /**
@@ -18,19 +14,19 @@ using namespace cv;
 using namespace std;
 
 struct DetectionResult {
-    //std::vector<cv::Point> yellowDP;
-    //std::vector<cv::Point> greenDP;
-    //std::vector<cv::Point> blueDP;
     std::vector<std::tuple<cv::Point, double>> yellowDP;
     std::vector<std::tuple<cv::Point, double>> greenDP;
     std::vector<std::tuple<cv::Point, double>> blueDP;
     Mat maskedImage;
-    int imageWidth;
-    int imageHeight;
 };
 
+/*
+    frontEndPoint is the intersection of the two longer sides of the isocele triangle (front end position of the car)
+    centerPoint is the center point of the car (only used for calibrating with the yellow equilateral triangles)
+ */
 struct dataPoint {
-    cv::Point point;
+    cv::Point frontEndPoint;
+    cv::Point centerPoint;
     int width;
     int height;
     double angle;
@@ -40,12 +36,12 @@ class CarsDetector {
     
     public:
     
-    /*
+    /**
      Returns image with cars overlay
      */
     DetectionResult detect_cars(Mat image);
     
-    /*
+    /**
      Returns image with corners overlay
      */
     DetectionResult detect_corners(Mat image);
@@ -53,20 +49,21 @@ class CarsDetector {
     
     private:
     
-    /*
+    /**
      Filters yellow and white colors on image
      */
     DetectionResult detect_cars_f(Mat image);
     
-    /*
+    /**
      Filters yellow and white colors on image
      */
     DetectionResult detect_corners_f(Mat image);
     
-    std::vector<dataPoint> detectObjects(cv::Mat Mask);
+    
+    std::vector<dataPoint> detectTriangles(cv::Mat Mask);
     
     Mat drawBoxes(cv::Mat Mask, std::vector<dataPoint> p, Scalar color);
     
-    Mat drawRectangles(cv::Mat Mask, std::vector<dataPoint> p, Scalar color);
+    Mat drawCalibrationRectangle(cv::Mat Mask, std::vector<dataPoint> p, Scalar color);
     
 };
