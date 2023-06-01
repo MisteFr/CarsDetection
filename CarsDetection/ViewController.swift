@@ -344,6 +344,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                     self.calibrated = false
                     
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        self.listener.cancel()
                         self.connection.cancel()
                         self.initTCPConnection(sendCalib: true)
                     }
@@ -355,6 +356,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                     //we will be in this state if we try to connect to the server but we get refused
                     print("Waiting")
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        self.listener.cancel()
                         self.connection.cancel()
                         self.initTCPConnection(sendCalib: true)
                     }
@@ -366,6 +368,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                     self.readyToSend = false
                 
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        self.listener.cancel()
                         self.connection.cancel()
                         self.initTCPConnection(sendCalib: true)
                     }
@@ -436,17 +439,31 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             return false
         }
         
+        let sortedPoints = yellowCenterPoints.sorted { (value1, value2) -> Bool in
+            // Extract CGPoint values from NSValue objects
+            let point1 = value1.cgPointValue
+            let point2 = value2.cgPointValue
+            
+            // Compare x coordinates first
+            if point1.x != point2.x {
+                return point1.x < point2.x
+            }
+            
+            // If x coordinates are equal, compare y coordinates
+            return point1.y < point2.y
+        }
+        
         
         if lastCalibrationPoints.isEmpty {
             // If this is the first time, set the lastCalibrationPoints and start the timer
-            self.lastCalibrationPoints = yellowCenterPoints
+            self.lastCalibrationPoints = sortedPoints
             self.lastCalibrationTimestamp = Date().timeIntervalSince1970
             return false
         } else {
             var isStable = true
-            for i in 0..<yellowCenterPoints.count {
+            for i in 0..<sortedPoints.count {
                 // Get the CGPoint values of the NSValue objects
-                let yellowPoint = yellowCenterPoints[i].cgPointValue
+                let yellowPoint = sortedPoints[i].cgPointValue
                 let lastPoint = self.lastCalibrationPoints[i].cgPointValue
                 
                 // Check if the distance between the two points is greater than a threshold value
@@ -460,8 +477,8 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             
             if(!isStable){
                 // If the current points are different from the last points, update the lastCalibrationPoints and lastCalibrationTimestamp
-                sendNotification(message: "Change of calibration points", needToBeSent: false)
-                self.lastCalibrationPoints = yellowCenterPoints
+                print("Change of calibration points")
+                self.lastCalibrationPoints = sortedPoints
                 self.lastCalibrationTimestamp = Date().timeIntervalSince1970
                 return false
             }else{
