@@ -32,7 +32,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     private let videoDataOutput = AVCaptureVideoDataOutput()
     
     private var readyToSend = false;
-    private var calibrated = false;
+    private var calibrated = true;
     private var savedCalibrationBody = "";
     
     private var lastCalibrationPoints: [NSValue] = []
@@ -277,7 +277,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         //port on which the server is listening
         let PORT: NWEndpoint.Port = 8899
         //address of the server on the local network
-        let ipAddress :NWEndpoint.Host = "172.20.10.6"
+        let ipAddress :NWEndpoint.Host = "172.20.10.3"
         
         let queue = DispatchQueue(label: "TCP Client Queue")
         let tcp = NWProtocolTCP.Options.init()

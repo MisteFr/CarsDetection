@@ -140,9 +140,29 @@ DetectionResult CarsDetector::detect_corners_f(Mat image) {
     cvtColor(image, hlsColorspacedImage, CV_RGB2HLS);
     
     //Keep only yellow triangles
+    
     Mat yellowMask;
     Scalar yellowLower = Scalar(20, 70, 70);
-    Scalar yellowUpper = Scalar(30, 255, 255);
+    Scalar yellowUpper = Scalar(40, 255, 255);
+     
+    
+    
+    /*
+    Mat redMask1;
+    Mat redMask2;
+    Mat redMask;
+    Scalar redLower1 = Scalar(0, 70, 50);    // Lower threshold values for the lower range of red hues
+    Scalar redUpper1 = Scalar(10, 255, 255); // Upper threshold values for the lower range of red hues
+    Scalar redLower2 = Scalar(160, 70, 50);  // Lower threshold values for the upper range of red hues
+    Scalar redUpper2 = Scalar(179, 255, 255); // Upper threshold values for the upper range of red hues
+    
+    
+    */
+
+    
+    
+    
+    
     inRange(hlsColorspacedImage, yellowLower, yellowUpper, yellowMask);
     std::vector<dataPoint> yellowPoints = detectTriangles(yellowMask);
     
@@ -195,14 +215,15 @@ DetectionResult CarsDetector::detect_cars_f(Mat image) {
     
     //BLUE
     Mat blueMask;
-    Scalar blueLower = Scalar(90, 30, 100);
+    //Scalar blueLower = Scalar(90, 50, 200);
+    Scalar blueLower = Scalar(90, 70, 150);
     Scalar blueUpper = Scalar(150, 255, 255);
     inRange(hlsColorspacedImage, blueLower, blueUpper, blueMask);
     std::vector<dataPoint> bluePoints = detectTriangles(blueMask);
     
     //GREEN
     Mat greenMask;
-    Scalar greenLower = Scalar(30, 40, 50);
+    Scalar greenLower = Scalar(50, 40, 50);
     Scalar greenUpper = Scalar(90, 255, 255);
     inRange(hlsColorspacedImage, greenLower, greenUpper, greenMask);
     std::vector<dataPoint> greenPoints = detectTriangles(greenMask);
