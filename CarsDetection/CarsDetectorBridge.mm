@@ -61,20 +61,33 @@ cv::Mat distCoeffs = (cv::Mat_<double>(1, 5) << -0.41882023e-01, 0, 0, 0, 0);
     NSMutableArray *yellowDP = [self convertPointsToNSValues:imageWithCarsDetected.yellowDP];
     NSMutableArray *greenDP = [self convertPointsToNSValues:imageWithCarsDetected.greenDP];
     NSMutableArray *blueDP = [self convertPointsToNSValues:imageWithCarsDetected.blueDP];
+    NSMutableArray *orangeDP = [self convertPointsToNSValues:imageWithCarsDetected.orangeDP];
+    NSMutableArray *pinkDP = [self convertPointsToNSValues:imageWithCarsDetected.pinkDP];
+    NSMutableArray *redDP = [self convertPointsToNSValues:imageWithCarsDetected.redDP];
     
     // Convert the detected angles to arrays of NSNumber objects
     NSMutableArray *yellowAngles = [self convertAnglesToNSNumbers:imageWithCarsDetected.yellowDP];
     NSMutableArray *greenAngles = [self convertAnglesToNSNumbers:imageWithCarsDetected.greenDP];
     NSMutableArray *blueAngles = [self convertAnglesToNSNumbers:imageWithCarsDetected.blueDP];
+    NSMutableArray *orangeAngles = [self convertAnglesToNSNumbers:imageWithCarsDetected.orangeDP];
+    NSMutableArray *pinkAngles = [self convertAnglesToNSNumbers:imageWithCarsDetected.pinkDP];
+    NSMutableArray *redAngles = [self convertAnglesToNSNumbers:imageWithCarsDetected.redDP];
     
     // return maskedImage and detectedPoints
     return @{@"maskedImage": maskedImage,
              @"yellowDP": yellowDP,
              @"greenDP": greenDP,
              @"blueDP": blueDP,
+             @"orangeDP":orangeDP,
+             @"pinkDP":pinkDP,
+             @"redDP":redDP,
              @"yellowAngles": yellowAngles,
              @"greenAngles": greenAngles,
-             @"blueAngles": blueAngles};
+             @"blueAngles": blueAngles,
+             @"orangeAngles": orangeAngles,
+             @"pinkAngles": pinkAngles,
+             @"redAngles": redAngles
+    };
 }
     
 /**

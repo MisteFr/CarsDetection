@@ -32,7 +32,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     private let videoDataOutput = AVCaptureVideoDataOutput()
     
     private var readyToSend = false;
-    private var calibrated = true;
+    private var calibrated = false;
     private var savedCalibrationBody = "";
     
     private var lastCalibrationPoints: [NSValue] = []
@@ -110,22 +110,31 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                     var yellowCenterPoints = imageWithLaneDetected["yellowDP"] as! [NSValue]
                     var greenCenterPoints = imageWithLaneDetected["greenDP"] as! [NSValue]
                     var blueCenterPoints = imageWithLaneDetected["blueDP"] as! [NSValue]
+                    var orangeCenterPoints = imageWithLaneDetected["orangeDP"] as! [NSValue]
+                    var pinkCenterPoints = imageWithLaneDetected["pinkDP"] as! [NSValue]
+                    var redCenterPoints = imageWithLaneDetected["redDP"] as! [NSValue]
                     
                     var yellowCenterAngles = imageWithLaneDetected["yellowAngles"] as! [NSValue]
                     var greenCenterAngles = imageWithLaneDetected["greenAngles"] as! [NSValue]
                     var blueCenterAngles = imageWithLaneDetected["blueAngles"] as! [NSValue]
+                    var orangeCenterAngles = imageWithLaneDetected["orangeAngles"] as! [NSValue]
+                    var pinkCenterAngles = imageWithLaneDetected["pinkAngles"] as! [NSValue]
+                    var redCenterAngles = imageWithLaneDetected["redAngles"] as! [NSValue]
                     
                     
                     //remove points that are outside the calibrated points.
                     var (sY, aY) = filterPoints(points: yellowCenterPoints, angles: yellowCenterAngles);
                     var (sG, aG) = filterPoints(points: greenCenterPoints, angles: greenCenterAngles);
                     var (sB, aB) = filterPoints(points: blueCenterPoints, angles: blueCenterAngles);
+                    var (sO, aO) = filterPoints(points: orangeCenterPoints, angles: orangeCenterAngles);
+                    var (sP, aP) = filterPoints(points: pinkCenterPoints, angles: pinkCenterAngles);
+                    var (sR, aR) = filterPoints(points: redCenterPoints, angles: redCenterAngles);
                     
                     //FORMAT
                     //CAL
                     //{"yellow": "[NSPoint: {930, 1399}, NSPoint: {149, 1372}, NSPoint: {949, 541}, NSPoint: {156, 537}]", "green": "[]", "blue" : "[]"}
                     
-                    let dataString = "{\"yellow\": \"" + sY + "\", \"green\":\"" + sG + "\", \"blue\" : \"" + sB + "\", \"yellowAngles\": \"" + aY + "\", \"greenAngles\": \"" + aG + "\", \"blueAngles\" : \"" + aB + "\"}\n"
+                    let dataString = "{\"yellow\": \"" + sY + "\", \"green\":\"" + sG + "\", \"blue\" : \"" + sB + "\", \"orange\" : \"" + sO + "\", \"pink\" : \"" + sP + "\", \"red\" : \"" + sR + "\", \"yellowAngles\": \"" + aY + "\", \"greenAngles\": \"" + aG + "\", \"blueAngles\" : \"" + aB + "\", \"orangeAngles\" : \"" + aO + "\", \"pinkAngles\" : \"" + aP + "\", \"redAngles\" : \"" + aR + "\"}\n"
                     
                     let bodyString = "CAM\n" + dataString
                     
@@ -277,7 +286,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         //port on which the server is listening
         let PORT: NWEndpoint.Port = 8899
         //address of the server on the local network
-        let ipAddress :NWEndpoint.Host = "172.20.10.3"
+        let ipAddress :NWEndpoint.Host = "172.20.10.6"
         
         let queue = DispatchQueue(label: "TCP Client Queue")
         let tcp = NWProtocolTCP.Options.init()
@@ -334,7 +343,8 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                     self.readyToSend = false
                     self.calibrated = false
                     
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        self.connection.cancel()
                         self.initTCPConnection(sendCalib: true)
                     }
                 
@@ -342,15 +352,21 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                     print("Preparing")
                 
                 case .waiting:
+                    //we will be in this state if we try to connect to the server but we get refused
                     print("Waiting")
-                
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        self.connection.cancel()
+                        self.initTCPConnection(sendCalib: true)
+                    }
+                    
                     
                 default:
                     print("Socket entered state \(String(describing: newState))")
                     self.calibrated = false
                     self.readyToSend = false
                 
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        self.connection.cancel()
                         self.initTCPConnection(sendCalib: true)
                     }
                 

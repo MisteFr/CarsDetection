@@ -17,6 +17,9 @@ struct DetectionResult {
     std::vector<std::tuple<cv::Point, double>> yellowDP;
     std::vector<std::tuple<cv::Point, double>> greenDP;
     std::vector<std::tuple<cv::Point, double>> blueDP;
+    std::vector<std::tuple<cv::Point, double>> orangeDP;
+    std::vector<std::tuple<cv::Point, double>> pinkDP;
+    std::vector<std::tuple<cv::Point, double>> redDP;
     Mat maskedImage;
 };
 

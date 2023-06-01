@@ -146,23 +146,6 @@ DetectionResult CarsDetector::detect_corners_f(Mat image) {
     Scalar yellowUpper = Scalar(40, 255, 255);
      
     
-    
-    /*
-    Mat redMask1;
-    Mat redMask2;
-    Mat redMask;
-    Scalar redLower1 = Scalar(0, 70, 50);    // Lower threshold values for the lower range of red hues
-    Scalar redUpper1 = Scalar(10, 255, 255); // Upper threshold values for the lower range of red hues
-    Scalar redLower2 = Scalar(160, 70, 50);  // Lower threshold values for the upper range of red hues
-    Scalar redUpper2 = Scalar(179, 255, 255); // Upper threshold values for the upper range of red hues
-    
-    
-    */
-
-    
-    
-    
-    
     inRange(hlsColorspacedImage, yellowLower, yellowUpper, yellowMask);
     std::vector<dataPoint> yellowPoints = detectTriangles(yellowMask);
     
@@ -208,7 +191,7 @@ DetectionResult CarsDetector::detect_cars_f(Mat image) {
     //YELLOW
     Mat yellowMask;
     Scalar yellowLower = Scalar(20, 70, 70);
-    Scalar yellowUpper = Scalar(30, 255, 255);
+    Scalar yellowUpper = Scalar(40, 255, 255);
     inRange(hlsColorspacedImage, yellowLower, yellowUpper, yellowMask);
     std::vector<dataPoint> yellowPoints = detectTriangles(yellowMask);
     
@@ -216,8 +199,10 @@ DetectionResult CarsDetector::detect_cars_f(Mat image) {
     //BLUE
     Mat blueMask;
     //Scalar blueLower = Scalar(90, 50, 200);
-    Scalar blueLower = Scalar(90, 70, 150);
-    Scalar blueUpper = Scalar(150, 255, 255);
+    //Scalar blueLower = Scalar(90, 70, 150);
+    //Scalar blueUpper = Scalar(130, 255, 255);
+    Scalar blueLower = Scalar(100, 70, 150);
+    Scalar blueUpper = Scalar(130, 255, 255);
     inRange(hlsColorspacedImage, blueLower, blueUpper, blueMask);
     std::vector<dataPoint> bluePoints = detectTriangles(blueMask);
     
@@ -228,8 +213,36 @@ DetectionResult CarsDetector::detect_cars_f(Mat image) {
     inRange(hlsColorspacedImage, greenLower, greenUpper, greenMask);
     std::vector<dataPoint> greenPoints = detectTriangles(greenMask);
     
+    //ORANGE
+    Mat orangeMask;
+    Scalar orangeLower = Scalar(0, 70, 100);      // Lower threshold values for the orange color in HLS
+    Scalar orangeUpper = Scalar(20, 255, 255);      // Upper threshold values for the orange color in HLS
+    inRange(hlsColorspacedImage, orangeLower, orangeUpper, orangeMask);
+
+    // Detect orange points or perform any desired operations
+    std::vector<dataPoint> orangePoints = detectTriangles(orangeMask);
+    
+    //PINK
+    Mat pinkMask;
+    Scalar pinkLower = Scalar(140, 70, 50);    // Lower threshold values for the purple color in HLS
+    Scalar pinkUpper = Scalar(170, 255, 255);  // Upper threshold values for the purple color in HLS
+    inRange(hlsColorspacedImage, pinkLower, pinkUpper, pinkMask);
+
+    // Detect orange points or perform any desired operations
+    std::vector<dataPoint> pinkPoints = detectTriangles(pinkMask);
+    
+    //RED
+    Mat redMask;
+    Scalar redLower = Scalar(170, 70, 50);      // Lower threshold values for the cyan color in HLS
+    Scalar redUpper = Scalar(210, 255, 255);    // Upper threshold values for the cyan color in HLS
+    inRange(hlsColorspacedImage, redLower, redUpper, redMask);
+    
+    // Detect orange points or perform any desired operations
+    std::vector<dataPoint> redPoints = detectTriangles(redMask);
+    
+    
     // combine masks into a single image
-    Mat colorMask = yellowMask + blueMask + greenMask;
+    Mat colorMask = yellowMask + blueMask + greenMask + orangeMask + pinkMask + redMask;
     Mat maskedImage;
     bitwise_and(image, image, maskedImage, colorMask);
     
@@ -237,9 +250,12 @@ DetectionResult CarsDetector::detect_cars_f(Mat image) {
     drawBoxes(maskedImage, yellowPoints, Scalar(255, 255, 0));
     drawBoxes(maskedImage, bluePoints, Scalar(0, 0, 255));
     drawBoxes(maskedImage, greenPoints, Scalar(0, 255, 0));
+    drawBoxes(maskedImage, orangePoints, Scalar(255, 128, 0));
+    drawBoxes(maskedImage, pinkPoints, Scalar(160, 32, 240));
+    drawBoxes(maskedImage, redPoints, Scalar(255, 0, 0));
     
     // Convert detected points to tuples
-    vector<tuple<Point, double>> yP, gP, bP;
+    vector<tuple<Point, double>> yP, gP, bP, oP, pP, rP;
     yP.reserve(yellowPoints.size());
     transform(yellowPoints.begin(), yellowPoints.end(), back_inserter(yP),
         [](const dataPoint& dp) {
@@ -258,10 +274,31 @@ DetectionResult CarsDetector::detect_cars_f(Mat image) {
             return make_tuple(dp.frontEndPoint, dp.angle);
         }
     );
+    oP.reserve(orangePoints.size());
+    transform(orangePoints.begin(), orangePoints.end(), back_inserter(oP),
+        [](const dataPoint& dp) {
+            return make_tuple(dp.frontEndPoint, dp.angle);
+        }
+    );
+    pP.reserve(pinkPoints.size());
+    transform(pinkPoints.begin(), pinkPoints.end(), back_inserter(pP),
+        [](const dataPoint& dp) {
+            return make_tuple(dp.frontEndPoint, dp.angle);
+        }
+    );
+    rP.reserve(redPoints.size());
+    transform(redPoints.begin(), redPoints.end(), back_inserter(rP),
+        [](const dataPoint& dp) {
+            return make_tuple(dp.frontEndPoint, dp.angle);
+        }
+    );
     
     result.yellowDP = yP;
     result.greenDP = gP;
     result.blueDP = bP;
+    result.orangeDP = oP;
+    result.pinkDP = pP;
+    result.redDP = rP;
     result.maskedImage = maskedImage;
         
     return result;
