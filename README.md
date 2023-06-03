@@ -10,17 +10,21 @@ So we turned to OpenCV, an open source computer vision library, for this task. A
 
 ### Reliable Coordinate System
 
-The first challenge was to establish a reliable and precise coordinate system, which initially stymied us because we hadn't taken into account the distortion created by the phone's lens. 
+The first challenge was to establish a reliable and precise coordinate system, which initially stymied us because we hadn't taken into account the radial distortion created by the phone's lens. Tangential distortion can occur when a camera lens is not perfectly aligned or when the camera sensor is not parallel to the subject but that's not the case here as the phone was placed to be perfectly parallel to the circuit.
 
 <br>
 <p align="center">
   <img src="https://uploads-ssl.webflow.com/5fff85e7f613e35edb5806ed/610c73a8a023cf1746b56833_pincushion_radial_distortion.png" alt="Radial Distorsion" width="300" height="300" />
+  <br>
+  Illustration of theorical radial lens distorsion
 </p>
 
 Fortunately, OpenCV makes it easy to correct this distortion, and the hardest part was calibrating the camera and finding its distortion coefficients. For those curious about this, the [OpenCV Calibration](https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html) page is very well documented.
 
 <p align="center">
   <img src="img1.jpg" alt="Illustration of lens distorsion" width="288" height="384" />
+  <br>
+  Image illustrating the effects of lens distortion at a height of 2.50 m above the circuit where the phone was fixed. The circuit forms a rectangle, but you don't get this impression when you look at the photo because of the distortion. 
 </p>
 
 ### Calibrating the circuit
@@ -42,6 +46,8 @@ Once the server has confirmed that it has received the positions, the applicatio
 
 <p align="center">
   <img src="img3.jpg" alt="Calibrating the circuit" width="262" height="349" />
+  <br>
+  Each of the yellow triangles is placed in one of the corners of the rectangle formed by the circuit. They are used for calibrating the coordinate system.
 </p>
 
 
@@ -63,6 +69,8 @@ Here's the technical process for detecting cars and their orientation:
 
 <p align="center">
   <img src="img2.jpg" alt="Detecting cars" width="231" height="325" />
+  <br>
+  Screenshot of the application in cars detection mode. Each car is detected by the application and indicated on the screen by a rectangle of the corresponding color. The information is sent to the server.
 </p>
 
 ### Performance
