@@ -52,4 +52,8 @@ Here's the technical process for detecting cars and their orientation:
 
 ### Performance
 
-On the performance side, the application was able to recalculate the positions of the cars as well as their orientation and send them to the server 10 to 15 times per second.
+In terms of performance, the application was able to recalculate car positions and orientations and send them to the server 10 to 15 times per second.
+
+### Potential Drawback
+
+One drawback is that to avoid false positives, the color calibration had to be very precise, and is only accurate for a certain time slot (depending on the amount of sunlight entering the building where we calibrated it). As a result, there were occasional false positives on certain colors, particularly in the evening when there was no sun. This can of course be adjusted by recalibrating.
