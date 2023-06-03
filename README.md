@@ -13,16 +13,15 @@ So we turned to OpenCV, an open source computer vision library, for this task. A
 The first challenge was to establish a reliable and precise coordinate system, which initially stymied us because we hadn't taken into account the distortion created by the phone's lens. 
 
 <br>
-<div style="text-align: center;">
+<p align="center">
   <img src="https://uploads-ssl.webflow.com/5fff85e7f613e35edb5806ed/610c73a8a023cf1746b56833_pincushion_radial_distortion.png" alt="Radial Distorsion" width="300" height="300" />
-</div>
+</p>
 
 Fortunately, OpenCV makes it easy to correct this distortion, and the hardest part was calibrating the camera and finding its distortion coefficients. For those curious about this, the [OpenCV Calibration](https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html) page is very well documented.
 
-<div style="text-align: center;">
-  <img src="img3.jpg" alt="Illustration of lens distorsion" width="288" height="384" />
-</div>
-![Calibrating the circuit](img3.jpg)
+<p align="center">
+  <img src="img1.jpg" alt="Illustration of lens distorsion" width="288" height="384" />
+</p>
 
 ### Calibrating the circuit
 
@@ -41,10 +40,9 @@ If we detect exactly 4 triangles and the positions have been the same for 5 seco
 
 Once the server has confirmed that it has received the positions, the application switches to car detection mode. The application also retains the points it used to calibrate, so that any potential false positives outside the rectangle formed by the calibration points are filtered out and not sent to the server.
 
-<div style="text-align: center;">
+<p align="center">
   <img src="img3.jpg" alt="Calibrating the circuit" width="262" height="349" />
-</div>
-![Calibrating the circuit](img3.jpg)
+</p>
 
 
 ### Detecting cars and their orientation
@@ -63,9 +61,9 @@ Here's the technical process for detecting cars and their orientation:
   - Identify the smallest side and draw a perpendicular to its center to obtain the orientation of the car (0-360 degrees).
 - Send to the server the position of each car and its orientation.
 
-<div style="text-align: center;">
+<p align="center">
   <img src="img2.jpg" alt="Detecting cars" width="231" height="325" />
-</div>
+</p>
 
 ### Performance
 
